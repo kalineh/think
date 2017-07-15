@@ -3,6 +3,11 @@
 /[Oo]bj/
 /[Bb]uild/
 /[Bb]uilds/
+/think/[Ll]ibrary/
+/think/[Tt]emp/
+/think/[Oo]bj/
+/think/[Bb]uild/
+/think/[Bb]uilds/
 /Assets/AssetStoreTools*
 UnityLockFile
 
