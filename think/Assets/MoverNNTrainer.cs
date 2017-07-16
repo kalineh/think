@@ -11,6 +11,12 @@ public class MoverNNTrainer
 
     public bool trainingMode;
     public bool trainingPause;
+    public bool trainingStep;
+
+    public bool trainingTimeScale;
+    public float trainingTimeScaleValue = 1.0f;
+
+    public Transform target;
 
     public void OnEnable()
     {
@@ -29,16 +35,24 @@ public class MoverNNTrainer
 
         instances = new List<MoverNN>();
         for (int i = 0; i < count; ++i)
+        {
             instances.Add(GameObject.Instantiate(pfb).GetComponent<MoverNN>());
+            instances[i].name = string.Format("Mover{0}", i);
+        }
 
         while (true)
         {
             foreach (var instance in instances)
-                instance.Reset(startPos, startRot);
+                instance.Reset(target, startPos, startRot);
 
             var timer = 0.0f;
             var dt = Time.fixedDeltaTime;
             var skip = false;
+
+            if (trainingTimeScale)
+                Time.timeScale = trainingTimeScaleValue;
+            else
+                Time.timeScale = 1.0f;
 
             if (trainingMode)
             {
@@ -48,7 +62,16 @@ public class MoverNNTrainer
 
                 while (timer < 60.0f)
                 {
-                    if (trainingPause == false)
+                    var pause = trainingPause;
+
+                    if (trainingStep)
+                    {
+                        pause = false;
+                        trainingPause = true;
+                        trainingStep = false;
+                    }
+
+                    if (pause == false)
                     {
                         Physics.Simulate(dt);
                         timer = Tick(timer, dt, out skip);
@@ -57,7 +80,7 @@ public class MoverNNTrainer
                     }
 
                     previewIndex += 1;
-                    if (previewIndex % previewStep == 0 || trainingPause)
+                    if (previewIndex % previewStep == 0 || pause)
                         yield return null;
                 }
                 yield return null;
@@ -75,27 +98,43 @@ public class MoverNNTrainer
             }
 
             var best = (MoverNN)null;
-            var bestScore = 0.0f;
+            var bestScore = 9999.0f;
 
             foreach (var instance in instances)
             {
-                var ofs = instance.transform.position - startPos;
+                var ofs = instance.transform.position - target.transform.position;
                 var lsq = ofs.sqrMagnitude;
                 var len = lsq > 0.001f ? ofs.magnitude : 0.0f;
 
-                if (len > bestScore)
+                if (instance.transform.position.y < -1.0f)
+                    len = 999999.0f;
+
+                if (len < bestScore)
                 {
                     best = instance;
                     bestScore = len;
                 }
             }
 
-            foreach (var instance in instances)
-                instance.nn.CopyWeights(best.nn);
-            foreach (var instance in instances)
-                instance.nn.MutateWeights(0.1f);
+            if (best != null)
+            {
+                foreach (var instance in instances)
+                    instance.nn.CopyWeights(best.nn);
 
-            Debug.LogFormat("MoverNNTrainer: generation {0} score {1} (time: {2})", generation, bestScore, timer);
+                foreach (var instance in instances)
+                {
+                    if (instance != best)
+                    {
+                        var ofs = instance.transform.position - target.transform.position;
+                        var lsq = ofs.sqrMagnitude;
+                        var len = lsq > 0.001f ? ofs.magnitude : 0.0f;
+    
+                        instance.nn.MutateWeights(0.2f);
+                    }
+                }
+
+                Debug.LogFormat("MoverNNTrainer: generation {0} winner '{1}': score {2} (time: {3})", generation, best.name, bestScore, timer);
+            }
 
             generation++;
         }

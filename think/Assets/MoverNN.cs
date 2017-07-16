@@ -115,7 +115,9 @@ public class MoverNN
 {
     private Rigidbody body;
     private float energy;
+    private float time;
 
+    private Transform target;
     private Vector3 prevPosition;
     private int stationaryFrames;
 
@@ -153,11 +155,12 @@ public class MoverNN
 
         var layerCount = 4;
         var neuronCount = 8;
-        var inputCount = 9;
+        var inputCount = 13;
         var outputCount = 3;
 
         nn = new NeuralNetwork(layerCount, neuronCount, inputCount, outputCount);
-        energy = 1.0f;
+        energy = 0.0f;
+        time = 0.0f;
     }
 
     public void InitFrom(MoverNN rhs)
@@ -165,9 +168,11 @@ public class MoverNN
 
     }
 
-    public void Reset(Vector3 startPos, Quaternion startRot)
+    public void Reset(Transform _target, Vector3 startPos, Quaternion startRot)
     {
         Init();
+
+        target = _target;
 
         body.MovePosition(startPos);
         body.MoveRotation(startRot);
@@ -176,13 +181,18 @@ public class MoverNN
 
         prevPosition = startPos;
         stationaryFrames = 0;
-        energy = 1.0f;
+        energy = 0.0f;
     }
 
     public void FixedUpdate()
     {
         if (!body)
             Init();
+
+        if (!target)
+            return;
+
+        time += Time.fixedDeltaTime;
 
         var currPosition = body.position;
         var moved = currPosition - prevPosition;
@@ -202,32 +212,45 @@ public class MoverNN
         if (hit == false)
             dist = 2.0f;
 
-        var input = new float[] { rot.x, rot.y, rot.z, rot.w, rotVel.x, rotVel.y, rotVel.z, dist, energy };
+        var targetOfs = target.transform.position - target.position;
+
+        var input = new float[] { rot.x, rot.y, rot.z, rot.w, rotVel.x, rotVel.y, rotVel.z, dist, energy, time, targetOfs.x, targetOfs.y, targetOfs.z };
         var output = new float[] { 0.0f, 0.0f, 0.0f };
 
         nn.Forward(input, output);
-        
+
+        output[0] = output[0] * 2.0f - 1.0f;
+        output[1] = output[1] * 2.0f - 1.0f;
+        output[1] = output[2] * 2.0f - 1.0f;
+
         //Debug.DrawLine(transform.position, info.point, Color.red, 3.0f);
-        //Debug.LogFormat("energy: {0}, out: {1}", energy, output[0] * 1000.0f);
+        //Debug.LogFormat("energy: {0}, out: {1},{2},{3}", energy, output[0], output[1], output[2]);
 
-        energy += 1.0f * Time.deltaTime;
+        energy += 10.0f * Time.deltaTime;
 
-        var available = energy;
+        var spinX = Mathf.Min(energy, Mathf.Abs(output[0])) * Mathf.Sign(output[0]);
+        var spinY = Mathf.Min(energy, Mathf.Abs(output[1])) * Mathf.Sign(output[1]);
+        var spinZ = Mathf.Min(energy, Mathf.Abs(output[2])) * Mathf.Sign(output[2]);
 
-        var spinX = Mathf.Min(energy, output[0]);
-        energy -= spinX;
+        var desiredTotal = Mathf.Abs(spinX) + Mathf.Abs(spinY) + Mathf.Abs(spinZ);
+        var ratioX = 1.0f / desiredTotal * Mathf.Abs(spinX);
+        var ratioY = 1.0f / desiredTotal * Mathf.Abs(spinY);
+        var ratioZ = 1.0f / desiredTotal * Mathf.Abs(spinZ);
 
-        var spinY = Mathf.Min(energy, output[1]);
-        energy -= spinY;
+        energy -= Mathf.Abs(spinX) * ratioX;
+        energy -= Mathf.Abs(spinY) * ratioY;
+        energy -= Mathf.Abs(spinZ) * ratioZ;
 
-        var spinZ = Mathf.Min(energy, output[2]);
-        energy -= spinZ;
-
-        energy = Mathf.Clamp01(energy);
+        energy = Mathf.Max(0.0f, energy);
 
         var dt = Time.fixedDeltaTime;
 
-        body.AddForce(spinX / dt, spinY / dt, spinZ / dt, ForceMode.Acceleration);
+        var torque = new Vector3(
+            (spinX * ratioX) / dt,
+            (spinY * ratioY) / dt,
+            (spinZ * ratioZ) / dt);
+
+        body.AddForce(torque, ForceMode.Acceleration);
     }
 
     public bool IsStopped()
