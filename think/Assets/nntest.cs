@@ -98,7 +98,7 @@ public class nntest
 
     public void OnEnable()
     {
-        Test4();
+        Test5();
     }
 
     public void Test0()
@@ -410,7 +410,137 @@ public class nntest
                 Debug.LogFormat("training: {0}: accuracy: {1}", i, accuracy);
             }
         }
+    }
 
+    public void Test5()
+    {
+        var data = new List<float[]>();
+
+        data.Add(new float[] { 1.2f, 0.7f, 1.0f, });
+        data.Add(new float[] { -0.3f, -0.5f, -1.0f });
+        data.Add(new float[] { 3.0f, 0.1f, 1.0f });
+        data.Add(new float[] { -0.1f, -1.0f, -1.0f });
+        data.Add(new float[] { -1.0f, 1.1f, -1.0f });
+        data.Add(new float[] { 2.1f, -3.0f, 1.0f });
+
+        float a0,b0,c0;
+        float a1,b1,c1;
+        float a2,b2,c2;
+        float a3,b3,c3,d3;
+
+        a0 = Random.Range(-0.5f, 0.5f);
+        b0 = Random.Range(-0.5f, 0.5f);
+        c0 = Random.Range(-0.5f, 0.5f);
+
+        a1 = Random.Range(-0.5f, 0.5f);
+        b1 = Random.Range(-0.5f, 0.5f);
+        c1 = Random.Range(-0.5f, 0.5f);
+
+        a2 = Random.Range(-0.5f, 0.5f);
+        b2 = Random.Range(-0.5f, 0.5f);
+        c2 = Random.Range(-0.5f, 0.5f);
+
+        a3 = Random.Range(-0.5f, 0.5f);
+        b3 = Random.Range(-0.5f, 0.5f);
+        c3 = Random.Range(-0.5f, 0.5f);
+        d3 = Random.Range(-0.5f, 0.5f);
+
+        for (int i = 0; i < 400; ++i)
+        {
+            var index = Random.Range(0, data.Count); 
+            var x = data[index][0];
+            var y = data[index][1];
+            var label = data[index][2];
+
+            var n0 = Mathf.Max(0.0f, a0*x + b0*y + c0);
+            var n1 = Mathf.Max(0.0f, a1*x + b1*y + c1);
+            var n2 = Mathf.Max(0.0f, a2*x + b2*y + c2);
+            var score = a3*n0 + b3*n1 + c3*n2 + d3;
+
+            var pull = 0.0f;
+
+            if (label == +1.0f && score < +1.0f) pull = +1.0f;
+            if (label == -1.0f && score > -1.0f) pull = -1.0f;
+
+            var dscore = pull;
+            var da3 = n0 * dscore;
+            var dn0 = a3 * dscore;
+            var db3 = n1 * dscore;
+            var dn1 = b3 * dscore;
+            var dc3 = n2 * dscore;
+            var dn2 = c3 * dscore;
+            var dd3 = 1.0f * dscore;
+
+            dn2 = n2 == 0.0f ? 0.0f : dn2;
+            dn1 = n1 == 0.0f ? 0.0f : dn1;
+            dn0 = n0 == 0.0f ? 0.0f : dn0;
+
+            var da0 = x * dn0;
+            var db0 = y * dn0;
+            var dc0 = 1.0f * dn0;
+
+            var da1 = x * dn1;
+            var db1 = y * dn1;
+            var dc1 = 1.0f * dn1;
+
+            var da2 = x * dn2;
+            var db2 = y * dn2;
+            var dc2 = 1.0f * dn2;
+
+            da0 += -a0;
+            da1 += -a1;
+            da2 += -a2;
+
+            db0 += -b0;
+            db1 += -b1;
+            db2 += -b2;
+
+            dc0 += -c0;
+            dc1 += -c1;
+            dc2 += -c2;
+
+            var step = 0.01f;
+
+            a0 += step * da0;
+            b0 += step * db0;
+            c0 += step * dc0;
+
+            a1 += step * da1;
+            b1 += step * db1;
+            c1 += step * dc1;
+
+            a2 += step * da2;
+            b2 += step * db2;
+            c2 += step * dc2;
+
+            a3 += step * da3;
+            b3 += step * db3;
+            c3 += step * dc3;
+
+            if (i % 25 == 0)
+            {
+                var correct = 0;
+                for (int j = 0; j < data.Count; ++j)
+                {
+                    var checkX = data[j][0];
+                    var checkY = data[j][1];
+                    var check0 = Mathf.Max(0.0f, a0 * checkX + b0 * checkY + c0);
+                    var check1 = Mathf.Max(0.0f, a1 * checkX + b1 * checkY + c1);
+                    var check2 = Mathf.Max(0.0f, a2 * checkX + b2 * checkY + c2);
+                    var check3 = a3 * check0 + b3 * check1 + c3 * check2 + d3;
+
+                    var predictedLabel = check3 > 0.0f ? +1.0f : -1.0f;
+                    var actualLabel = data[j][2];
+                    if (actualLabel == predictedLabel)
+                        correct++;
+                }
+                var accuracy = (float)correct / (float)data.Count;
+
+                Debug.LogFormat("training: {0}: accuracy: {1}", i, accuracy);
+            }
+        }
+
+        
     }
 
 }
