@@ -24,7 +24,7 @@ GameObject:
   - component: {fileID: 23709217178542482}
   - component: {fileID: 114424368192157868}
   - component: {fileID: 54125889404411030}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MoverNN
   m_TagString: Untagged
   m_Icon: {fileID: 0}

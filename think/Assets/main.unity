@@ -108,48 +108,6 @@ NavMeshSettings:
     tileSize: 256
     accuratePlacement: 0
   m_NavMeshData: {fileID: 0}
---- !u!1001 &322921406
-Prefab:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 4889734520168934, guid: a50ce508121c30842b9baf68f703fcb3, type: 2}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889734520168934, guid: a50ce508121c30842b9baf68f703fcb3, type: 2}
-      propertyPath: m_LocalPosition.y
-      value: 1.37
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889734520168934, guid: a50ce508121c30842b9baf68f703fcb3, type: 2}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889734520168934, guid: a50ce508121c30842b9baf68f703fcb3, type: 2}
-      propertyPath: m_LocalRotation.x
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889734520168934, guid: a50ce508121c30842b9baf68f703fcb3, type: 2}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889734520168934, guid: a50ce508121c30842b9baf68f703fcb3, type: 2}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889734520168934, guid: a50ce508121c30842b9baf68f703fcb3, type: 2}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889734520168934, guid: a50ce508121c30842b9baf68f703fcb3, type: 2}
-      propertyPath: m_RootOrder
-      value: 4
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-  m_ParentPrefab: {fileID: 100100000, guid: a50ce508121c30842b9baf68f703fcb3, type: 2}
-  m_IsPrefabParent: 0
 --- !u!1001 &490733084
 Prefab:
   m_ObjectHideFlags: 0
@@ -157,6 +115,11 @@ Prefab:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
+        type: 2}
+      propertyPath: instances.Array.size
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4280301510045780, guid: 03fdbe13a7e3d6a4584b346f03185d28, type: 2}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -187,22 +150,32 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 4280301510045780, guid: 03fdbe13a7e3d6a4584b346f03185d28, type: 2}
       propertyPath: m_RootOrder
-      value: 5
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
         type: 2}
       propertyPath: instance
       value: 
-      objectReference: {fileID: 638822192}
+      objectReference: {fileID: 0}
+    - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
+        type: 2}
+      propertyPath: instances.Array.data[0]
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
+        type: 2}
+      propertyPath: pfb
+      value: 
+      objectReference: {fileID: 1825936882579986, guid: a50ce508121c30842b9baf68f703fcb3,
+        type: 2}
+    - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
+        type: 2}
+      propertyPath: trainingMode
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 03fdbe13a7e3d6a4584b346f03185d28, type: 2}
   m_IsPrefabParent: 0
---- !u!114 &638822192 stripped
-MonoBehaviour:
-  m_PrefabParentObject: {fileID: 114424368192157868, guid: a50ce508121c30842b9baf68f703fcb3,
-    type: 2}
-  m_PrefabInternal: {fileID: 322921406}
-  m_Script: {fileID: 11500000, guid: d1870e21e2003fb438ca6990a4463215, type: 3}
 --- !u!1 &698720821
 GameObject:
   m_ObjectHideFlags: 0
@@ -422,7 +395,7 @@ GameObject:
   - component: {fileID: 1840024671}
   - component: {fileID: 1840024670}
   - component: {fileID: 1840024669}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: floor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
