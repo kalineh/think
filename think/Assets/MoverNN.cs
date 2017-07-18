@@ -2,114 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Neuron
-{
-    public float sum;
-    public float[] weights;
-}
-
-public class NeuronLayer
-{
-    public Neuron[] neurons;
-}
-
-public class NeuralNetwork
-{
-    private NeuronLayer[] graph;
-
-    public NeuralNetwork(int layerCount, int neuronCount, int inputCount, int outputCount)
-    {
-        graph = new NeuronLayer[layerCount];
-
-        for (int i = 0; i < layerCount; ++i)
-        {
-            graph[i] = new NeuronLayer();
-            graph[i].neurons = new Neuron[neuronCount];
-
-            for (int j = 0; j < neuronCount; ++j)
-            {
-                var weightCount = neuronCount;
-
-                if (i == 0)
-                    weightCount = inputCount;
-
-                graph[i].neurons[j] = new Neuron();
-                graph[i].neurons[j].weights = new float[weightCount];
-                for (int k = 0; k < weightCount; ++k)
-                    graph[i].neurons[j].weights[k] = Random.Range(-0.5f, 0.5f);
-            }
-        }
-    }
-
-    public void CopyWeights(NeuralNetwork other)
-    {
-        for (int i = 0; i < graph.Length; ++i)
-        {
-            var layer = graph[i];
-            for (int j = 0; j < layer.neurons.Length; ++j)
-            {
-                var neuron = layer.neurons[j];
-                for (int k = 0; k < neuron.weights.Length; ++k)
-                    neuron.weights[k] = other.graph[i].neurons[j].weights[k];
-            }
-        }
-    }
-
-    public void MutateWeights(float mutation)
-    {
-        for (int i = 0; i < graph.Length; ++i)
-        {
-            var layer = graph[i];
-            for (int j = 0; j < layer.neurons.Length; ++j)
-            {
-                var neuron = layer.neurons[j];
-                for (int k = 0; k < neuron.weights.Length; ++k)
-                {
-                    if (Random.Range(0.0f, 1.0f) < mutation)
-                        neuron.weights[k] = Random.Range(-0.5f, 0.5f);
-                }
-            }
-        }
-    }
-
-    public void Forward(float[] inputs, float[] output)
-    {
-        var layerFirst = graph[0];
-        var layerLast = graph[graph.Length - 1];
-
-        // first layer weights are the left lines to input
-
-        for (int i = 0; i < layerFirst.neurons.Length; ++i)
-        {
-            var neuron = layerFirst.neurons[i];
-            neuron.sum = 0.0f;
-            for (int j = 0; j < inputs.Length; ++j)
-                neuron.sum += neuron.weights[j] * inputs[j];
-        }
-
-        for (int i = 1; i < graph.Length; ++i)
-        {
-            var layerCurr = graph[i];
-            var layerPrev = graph[i - 1];
-
-            for (int j = 0; j < layerCurr.neurons.Length; ++j)
-            {
-                var neuronCurr = layerCurr.neurons[j];
-                neuronCurr.sum = 0.0f;
-                for (int k = 0; k < layerPrev.neurons.Length; ++k)
-                {
-                    var neuronPrev = layerPrev.neurons[k];
-                    neuronCurr.sum += neuronCurr.weights[k] * neuronPrev.sum;
-                }
-            }
-        }
-
-        for (int i = 0; i < output.Length; ++i)
-            output[i] = 1.0f / (1.0f + Mathf.Exp(layerLast.neurons[i].sum));
-
-    } 
-}
-
 public class MoverNN
     : MonoBehaviour
 {
@@ -141,6 +33,8 @@ public class MoverNN
 
     public NeuralNetwork nn;
 
+    public bool debugDrawNN;
+
     public void OnEnable()
     {
         Init();
@@ -155,7 +49,7 @@ public class MoverNN
 
         var layerCount = 4;
         var neuronCount = 8;
-        var inputCount = 13;
+        var inputCount = 16;
         var outputCount = 3;
 
         nn = new NeuralNetwork(layerCount, neuronCount, inputCount, outputCount);
@@ -184,6 +78,14 @@ public class MoverNN
         energy = 0.0f;
     }
 
+    string[] lastInputLabels;
+    float[] lastInputValues;
+
+    void OnDrawGizmosSelected()
+    {
+        nn.DebugDraw(transform.position, lastInputLabels, lastInputValues);
+    }
+
     public void FixedUpdate()
     {
         if (!body)
@@ -204,6 +106,8 @@ public class MoverNN
 
         var rot = body.rotation;
         var rotVel = body.angularVelocity;
+        var vel = body.velocity;
+
         var mask = LayerMask.GetMask("floor");
         var info = new RaycastHit();
         var hit = Physics.Raycast(transform.position, Vector3.down, out info, 2.0f, mask);
@@ -214,19 +118,25 @@ public class MoverNN
 
         var targetOfs = target.transform.position - target.position;
 
-        var input = new float[] { rot.x, rot.y, rot.z, rot.w, rotVel.x, rotVel.y, rotVel.z, dist, energy, time, targetOfs.x, targetOfs.y, targetOfs.z };
+        var input = new float[] { vel.x, vel.y, vel.z, rot.x, rot.y, rot.z, rot.w, rotVel.x, rotVel.y, rotVel.z, dist, energy, time, targetOfs.x, targetOfs.y, targetOfs.z };
         var output = new float[] { 0.0f, 0.0f, 0.0f };
+
+        lastInputLabels = new string[] { "vel.x", "vel.y", "vel.z", "rot.x", "rot.y", "rot.z", "rot.w", "rotVel.x", "rotVel.y", "rotVel.z", "dist", "energy", "time", "targetOfs.x", "targetOfs.y", "targetOfs.z" };
+        lastInputValues = input;
+
+        for (int i = 0; i < input.Length; ++i)
+            input[i] = NeuralNetwork.Sigmoid(input[i]);
 
         nn.Forward(input, output);
 
         output[0] = output[0] * 2.0f - 1.0f;
         output[1] = output[1] * 2.0f - 1.0f;
-        output[1] = output[2] * 2.0f - 1.0f;
+        output[2] = output[2] * 2.0f - 1.0f;
 
         //Debug.DrawLine(transform.position, info.point, Color.red, 3.0f);
         //Debug.LogFormat("energy: {0}, out: {1},{2},{3}", energy, output[0], output[1], output[2]);
 
-        energy += 10.0f * Time.deltaTime;
+        energy += 30.0f * Time.deltaTime;
 
         var spinX = Mathf.Min(energy, Mathf.Abs(output[0])) * Mathf.Sign(output[0]);
         var spinY = Mathf.Min(energy, Mathf.Abs(output[1])) * Mathf.Sign(output[1]);
@@ -250,7 +160,7 @@ public class MoverNN
             (spinY * ratioY) / dt,
             (spinZ * ratioZ) / dt);
 
-        body.AddForce(torque, ForceMode.Acceleration);
+        body.AddTorque(torque, ForceMode.Acceleration);
     }
 
     public bool IsStopped()

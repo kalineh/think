@@ -12,9 +12,13 @@ public class MoverNNTrainer
     public bool trainingMode;
     public bool trainingPause;
     public bool trainingStep;
+    public bool trainingSkip;
 
     public bool trainingTimeScale;
     public float trainingTimeScaleValue = 1.0f;
+    public float trainingTimeLimit = 30.0f;
+
+    public int trainingCount = 64;
 
     public Transform target;
 
@@ -31,7 +35,7 @@ public class MoverNNTrainer
         var startRot = Quaternion.identity;
 
         var generation = 0;
-        var count = 64;
+        var count = trainingCount;
 
         instances = new List<MoverNN>();
         for (int i = 0; i < count; ++i)
@@ -60,7 +64,7 @@ public class MoverNNTrainer
                 int previewStep = 100;
                 int previewIndex = 0;
 
-                while (timer < 60.0f)
+                while (timer < trainingTimeLimit)
                 {
                     var pause = trainingPause;
 
@@ -88,11 +92,16 @@ public class MoverNNTrainer
             else
             {
                 Physics.autoSimulation = true;
-                while (timer < 60.0f)
+                while (timer < trainingTimeLimit)
                 {
                     timer = Tick(timer, Time.fixedDeltaTime, out skip);
                     if (skip)
                         break;
+                    if (trainingSkip)
+                    {
+                        trainingSkip = false;
+                        break;
+                    }
                     yield return new WaitForFixedUpdate();
                 }
             }
@@ -105,11 +114,12 @@ public class MoverNNTrainer
                 var ofs = instance.transform.position - target.transform.position;
                 var lsq = ofs.sqrMagnitude;
                 var len = lsq > 0.001f ? ofs.magnitude : 0.0f;
+                var score = len * 1.0f;
 
                 if (instance.transform.position.y < -1.0f)
-                    len = 999999.0f;
+                    score = 999999.0f;
 
-                if (len < bestScore)
+                if (score < bestScore)
                 {
                     best = instance;
                     bestScore = len;
@@ -123,14 +133,9 @@ public class MoverNNTrainer
 
                 foreach (var instance in instances)
                 {
-                    if (instance != best)
-                    {
-                        var ofs = instance.transform.position - target.transform.position;
-                        var lsq = ofs.sqrMagnitude;
-                        var len = lsq > 0.001f ? ofs.magnitude : 0.0f;
-    
-                        instance.nn.MutateWeights(0.2f);
-                    }
+                    var mutation = instance == best ? 0.0f : 0.1f;
+
+                    instance.nn.MutateWeights(mutation);
                 }
 
                 Debug.LogFormat("MoverNNTrainer: generation {0} winner '{1}': score {2} (time: {3})", generation, best.name, bestScore, timer);
