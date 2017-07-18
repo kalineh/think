@@ -49,7 +49,7 @@ public class MoverNN
 
         var layerCount = 4;
         var neuronCount = 8;
-        var inputCount = 16;
+        var inputCount = 17;
         var outputCount = 3;
 
         nn = new NeuralNetwork(layerCount, neuronCount, inputCount, outputCount);
@@ -117,11 +117,15 @@ public class MoverNN
             dist = 2.0f;
 
         var targetOfs = target.transform.position - target.position;
+        var targetDist = targetOfs.sqrMagnitude;
 
-        var input = new float[] { vel.x, vel.y, vel.z, rot.x, rot.y, rot.z, rot.w, rotVel.x, rotVel.y, rotVel.z, dist, energy, time, targetOfs.x, targetOfs.y, targetOfs.z };
+        if (targetDist > 0.001f)
+            targetDist = Mathf.Sqrt(targetDist);
+
+        var input = new float[] { vel.x, vel.y, vel.z, rot.x, rot.y, rot.z, rot.w, rotVel.x, rotVel.y, rotVel.z, dist, energy, time, targetOfs.x, targetOfs.y, targetOfs.z, targetDist };
         var output = new float[] { 0.0f, 0.0f, 0.0f };
 
-        lastInputLabels = new string[] { "vel.x", "vel.y", "vel.z", "rot.x", "rot.y", "rot.z", "rot.w", "rotVel.x", "rotVel.y", "rotVel.z", "dist", "energy", "time", "targetOfs.x", "targetOfs.y", "targetOfs.z" };
+        lastInputLabels = new string[] { "vel.x", "vel.y", "vel.z", "rot.x", "rot.y", "rot.z", "rot.w", "rotVel.x", "rotVel.y", "rotVel.z", "dist", "energy", "time", "targetOfs.x", "targetOfs.y", "targetOfs.z", "targetDist" };
         lastInputValues = input;
 
         for (int i = 0; i < input.Length; ++i)
@@ -136,7 +140,7 @@ public class MoverNN
         //Debug.DrawLine(transform.position, info.point, Color.red, 3.0f);
         //Debug.LogFormat("energy: {0}, out: {1},{2},{3}", energy, output[0], output[1], output[2]);
 
-        energy += 30.0f * Time.deltaTime;
+        energy += 10.0f * Time.deltaTime;
 
         var spinX = Mathf.Min(energy, Mathf.Abs(output[0])) * Mathf.Sign(output[0]);
         var spinY = Mathf.Min(energy, Mathf.Abs(output[1])) * Mathf.Sign(output[1]);
@@ -161,6 +165,7 @@ public class MoverNN
             (spinZ * ratioZ) / dt);
 
         body.AddTorque(torque, ForceMode.Acceleration);
+        body.AddForce(torque, ForceMode.Acceleration);
     }
 
     public bool IsStopped()

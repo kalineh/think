@@ -20,7 +20,8 @@ public class MoverNNTrainer
 
     public int trainingCount = 64;
 
-    public Transform target;
+    public GameObject pfbTarget;
+    public GameObject target;
 
     public void OnEnable()
     {
@@ -30,9 +31,6 @@ public class MoverNNTrainer
     public IEnumerator DoCycles()
     {
         Debug.LogFormat("MoverNNTrainer: training starting...");
-
-        var startPos = Vector3.zero;
-        var startRot = Quaternion.identity;
 
         var generation = 0;
         var count = trainingCount;
@@ -46,8 +44,13 @@ public class MoverNNTrainer
 
         while (true)
         {
+            if (target != null)
+                Destroy(target);
+
+            target = GameObject.Instantiate(pfbTarget);
+
             foreach (var instance in instances)
-                instance.Reset(target, startPos, startRot);
+                instance.Reset(target.transform, transform.position, transform.rotation);
 
             var timer = 0.0f;
             var dt = Time.fixedDeltaTime;
