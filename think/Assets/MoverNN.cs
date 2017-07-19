@@ -48,8 +48,8 @@ public class MoverNN
         body = GetComponent<Rigidbody>();
 
         var layerCount = 4;
-        var neuronCount = 8;
-        var inputCount = 17;
+        var neuronCount = 6;
+        var inputCount = 3;
         var outputCount = 3;
 
         nn = new NeuralNetwork(layerCount, neuronCount, inputCount, outputCount);
@@ -116,17 +116,19 @@ public class MoverNN
         if (hit == false)
             dist = 2.0f;
 
-        var targetOfs = target.transform.position - target.position;
+        var targetOfs = target.transform.position - transform.position;
         var targetDist = targetOfs.sqrMagnitude;
 
         if (targetDist > 0.001f)
             targetDist = Mathf.Sqrt(targetDist);
 
-        var input = new float[] { vel.x, vel.y, vel.z, rot.x, rot.y, rot.z, rot.w, rotVel.x, rotVel.y, rotVel.z, dist, energy, time, targetOfs.x, targetOfs.y, targetOfs.z, targetDist };
-        var output = new float[] { 0.0f, 0.0f, 0.0f };
+        //var input = new float[] { vel.x, vel.y, vel.z, rot.x, rot.y, rot.z, rot.w, rotVel.x, rotVel.y, rotVel.z, dist, energy, time, targetOfs.x, targetOfs.y, targetOfs.z, targetDist };
+        //var output = new float[] { 0.0f, 0.0f, 0.0f };
+        //lastInputLabels = new string[] { "vel.x", "vel.y", "vel.z", "rot.x", "rot.y", "rot.z", "rot.w", "rotVel.x", "rotVel.y", "rotVel.z", "dist", "energy", "time", "targetOfs.x", "targetOfs.y", "targetOfs.z", "targetDist" };
+        //lastInputValues = input;
 
-        lastInputLabels = new string[] { "vel.x", "vel.y", "vel.z", "rot.x", "rot.y", "rot.z", "rot.w", "rotVel.x", "rotVel.y", "rotVel.z", "dist", "energy", "time", "targetOfs.x", "targetOfs.y", "targetOfs.z", "targetDist" };
-        lastInputValues = input;
+        var input = new float[] { targetOfs.x, targetOfs.y, targetOfs.z };
+        var output = new float[] { 0.0f, 0.0f, 0.0f, };
 
         for (int i = 0; i < input.Length; ++i)
             input[i] = NeuralNetwork.Sigmoid(input[i]);
@@ -147,9 +149,13 @@ public class MoverNN
         var spinZ = Mathf.Min(energy, Mathf.Abs(output[2])) * Mathf.Sign(output[2]);
 
         var desiredTotal = Mathf.Abs(spinX) + Mathf.Abs(spinY) + Mathf.Abs(spinZ);
-        var ratioX = 1.0f / desiredTotal * Mathf.Abs(spinX);
-        var ratioY = 1.0f / desiredTotal * Mathf.Abs(spinY);
-        var ratioZ = 1.0f / desiredTotal * Mathf.Abs(spinZ);
+        var desiredTotalRcp = 0.0f;
+        if (desiredTotal > 0.0001f)
+            desiredTotalRcp = 1.0f / desiredTotal;
+
+        var ratioX = Mathf.Abs(spinX) * desiredTotalRcp;
+        var ratioY = Mathf.Abs(spinY) * desiredTotalRcp;
+        var ratioZ = Mathf.Abs(spinZ) * desiredTotalRcp;
 
         energy -= Mathf.Abs(spinX) * ratioX;
         energy -= Mathf.Abs(spinY) * ratioY;
@@ -164,12 +170,19 @@ public class MoverNN
             (spinY * ratioY) / dt,
             (spinZ * ratioZ) / dt);
 
-        body.AddTorque(torque, ForceMode.Acceleration);
-        body.AddForce(torque, ForceMode.Acceleration);
+        if (float.IsNaN(torque.x))
+            Debug.Log("fail");
+        if (float.IsNaN(torque.y))
+            Debug.Log("fail");
+        if (float.IsNaN(torque.z))
+            Debug.Log("fail");
+
+        //body.AddTorque(torque, ForceMode.Acceleration);
+        body.AddForce(torque * 0.25f, ForceMode.Acceleration);
     }
 
     public bool IsStopped()
     {
-        return stationaryFrames > 60;
+        return stationaryFrames > 120;
     }
 }

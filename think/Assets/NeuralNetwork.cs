@@ -2,17 +2,20 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
 public class Neuron
 {
     public float sum;
     public float[] weights;
 }
 
+[System.Serializable]
 public class NeuronLayer
 {
     public Neuron[] neurons;
 }
 
+[System.Serializable]
 public class NeuralNetwork
 {
     public static float Sigmoid(float x)
@@ -20,7 +23,7 @@ public class NeuralNetwork
         return 1.0f / (1.0f + Mathf.Exp(-x));
     }
 
-    private NeuronLayer[] graph;
+    public NeuronLayer[] graph;
 
     public NeuralNetwork(int layerCount, int neuronCount, int inputCount, int outputCount)
     {

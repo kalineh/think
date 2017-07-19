@@ -35,6 +35,8 @@ public class MoverNNTrainer
         var generation = 0;
         var count = trainingCount;
 
+        var previousBestScore = 9999.0f;
+
         instances = new List<MoverNN>();
         for (int i = 0; i < count; ++i)
         {
@@ -129,6 +131,15 @@ public class MoverNNTrainer
                 }
             }
 
+            previousBestScore += 0.5f;
+            if (bestScore > previousBestScore * 1.25f)
+            {
+                Debug.LogFormat("MoverNNTrainer: generation {0} score {1} didn't beat score: {2}", generation, bestScore, previousBestScore);
+                best = null;
+            }
+            else
+                previousBestScore = bestScore;
+
             if (best != null)
             {
                 foreach (var instance in instances)
@@ -136,7 +147,7 @@ public class MoverNNTrainer
 
                 foreach (var instance in instances)
                 {
-                    var mutation = instance == best ? 0.0f : 0.1f;
+                    var mutation = instance == best ? 0.0f : 0.01f;
 
                     instance.nn.MutateWeights(mutation);
                 }
