@@ -290,7 +290,7 @@ Prefab:
     - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
         type: 2}
       propertyPath: trainingCount
-      value: 64
+      value: 48
       objectReference: {fileID: 0}
     - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
         type: 2}

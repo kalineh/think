@@ -131,7 +131,7 @@ public class MoverNNTrainer
                 }
             }
 
-            previousBestScore += 0.5f;
+            previousBestScore += 2.0f;
             if (bestScore > previousBestScore * 1.25f)
             {
                 Debug.LogFormat("MoverNNTrainer: generation {0} score {1} didn't beat score: {2}", generation, bestScore, previousBestScore);

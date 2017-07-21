@@ -48,8 +48,8 @@ public class MoverNN
         body = GetComponent<Rigidbody>();
 
         var layerCount = 4;
-        var neuronCount = 6;
-        var inputCount = 3;
+        var neuronCount = 8;
+        var inputCount = 10;
         var outputCount = 3;
 
         nn = new NeuralNetwork(layerCount, neuronCount, inputCount, outputCount);
@@ -104,7 +104,7 @@ public class MoverNN
             stationaryFrames = 0;
         prevPosition = currPosition;
 
-        var rot = body.rotation;
+        var rot = body.rotation.eulerAngles;
         var rotVel = body.angularVelocity;
         var vel = body.velocity;
 
@@ -127,7 +127,7 @@ public class MoverNN
         //lastInputLabels = new string[] { "vel.x", "vel.y", "vel.z", "rot.x", "rot.y", "rot.z", "rot.w", "rotVel.x", "rotVel.y", "rotVel.z", "dist", "energy", "time", "targetOfs.x", "targetOfs.y", "targetOfs.z", "targetDist" };
         //lastInputValues = input;
 
-        var input = new float[] { targetOfs.x, targetOfs.y, targetOfs.z };
+        var input = new float[] { rot.x, rot.y, rot.z, rotVel.x, rotVel.y, rotVel.z, energy, targetOfs.x, targetOfs.y, targetOfs.z };
         var output = new float[] { 0.0f, 0.0f, 0.0f, };
 
         for (int i = 0; i < input.Length; ++i)
@@ -142,7 +142,7 @@ public class MoverNN
         //Debug.DrawLine(transform.position, info.point, Color.red, 3.0f);
         //Debug.LogFormat("energy: {0}, out: {1},{2},{3}", energy, output[0], output[1], output[2]);
 
-        energy += 10.0f * Time.deltaTime;
+        energy += 20.0f * Time.deltaTime;
 
         var spinX = Mathf.Min(energy, Mathf.Abs(output[0])) * Mathf.Sign(output[0]);
         var spinY = Mathf.Min(energy, Mathf.Abs(output[1])) * Mathf.Sign(output[1]);
@@ -170,14 +170,9 @@ public class MoverNN
             (spinY * ratioY) / dt,
             (spinZ * ratioZ) / dt);
 
-        if (float.IsNaN(torque.x))
-            Debug.Log("fail");
-        if (float.IsNaN(torque.y))
-            Debug.Log("fail");
-        if (float.IsNaN(torque.z))
-            Debug.Log("fail");
+        //body.AddTorque(torque * 2.5f, ForceMode.Acceleration);
+        //body.AddRelativeTorque(torque * 7.5f, ForceMode.Acceleration);
 
-        //body.AddTorque(torque, ForceMode.Acceleration);
         body.AddForce(torque * 0.25f, ForceMode.Acceleration);
     }
 

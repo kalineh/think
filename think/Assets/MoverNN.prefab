@@ -121,4 +121,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1870e21e2003fb438ca6990a4463215, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  nn:
+    graph: []
   debugDrawNN: 0
