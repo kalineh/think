@@ -18,9 +18,14 @@ public class NeuronLayer
 [System.Serializable]
 public class NeuralNetwork
 {
-    public static float Sigmoid(float x)
+    public static float Sigmoid01(float x)
     {
         return 1.0f / (1.0f + Mathf.Exp(-x));
+    }
+
+    public static float Sigmoid11(float x)
+    {
+        return (2.0f * 1.0f / (1.0f + Mathf.Exp(-x))) - 1.0f;
     }
 
     public NeuronLayer[] graph;
@@ -74,7 +79,50 @@ public class NeuralNetwork
                 for (int k = 0; k < neuron.weights.Length; ++k)
                 {
                     if (Random.Range(0.0f, 1.0f) < mutation)
-                        neuron.weights[k] = Random.Range(-0.5f, 0.5f);
+                        neuron.weights[k] = MutateWeight(neuron.weights[k]);
+                }
+            }
+        }
+    }
+
+    public float MutateWeight(float current)
+    {
+        var type = Random.Range(0, 4);
+
+        type = 1;
+
+        switch (type)
+        {
+            case 0: return current * -1.0f;
+            case 1: return Random.Range(-0.5f, 0.5f);
+            case 2: return Mathf.Clamp(current * Random.Range(0.0f, 1.0f), -0.5f, 0.5f);
+            case 3: return current * Random.Range(0.0f, 1.0f);
+        }
+
+        return current;
+    }
+
+    public void BlendWeights(List<NeuralNetwork> others, float factor, float amplify)
+    {
+        for (int i = 0; i < graph.Length; ++i)
+        {
+            var layer = graph[i];
+            for (int j = 0; j < layer.neurons.Length; ++j)
+            {
+                var neuron = layer.neurons[j];
+                for (int k = 0; k < neuron.weights.Length; ++k)
+                {
+                    if (Random.Range(0.0f, 1.0f) < factor)
+                    {
+                        var weight = neuron.weights[k];
+                        var sum = weight;
+                        foreach (var other in others)
+                            sum += other.graph[i].neurons[j].weights[k];
+                        var avg = sum / ((float)(1 + others.Count));
+                        avg *= amplify;
+                        avg = Mathf.Clamp(avg, -0.5f, 0.5f);
+                        neuron.weights[k] = avg;
+                    }
                 }
             }
         }
@@ -93,6 +141,7 @@ public class NeuralNetwork
             neuron.sum = 0.0f;
             for (int j = 0; j < inputs.Length; ++j)
                 neuron.sum += neuron.weights[j] * inputs[j];
+            neuron.sum = Sigmoid11(neuron.sum);
         }
 
         for (int i = 1; i < graph.Length; ++i)
@@ -109,11 +158,12 @@ public class NeuralNetwork
                     var neuronPrev = layerPrev.neurons[k];
                     neuronCurr.sum += neuronCurr.weights[k] * neuronPrev.sum;
                 }
+                neuronCurr.sum = Sigmoid11(neuronCurr.sum);
             }
         }
 
         for (int i = 0; i < output.Length; ++i)
-            output[i] = Sigmoid(layerLast.neurons[i].sum);
+            output[i] = layerLast.neurons[i].sum;
     } 
 
     public void DebugDraw(Vector3 pos, string[] lastInputLabels, float[] lastInputValues)
@@ -150,7 +200,7 @@ public class NeuralNetwork
 
                 for (int k = 0; k < weights.Length; ++k)
                 {
-                    var color = Color.Lerp(Color.red, Color.green, weights[k] + 0.5f);
+                    var color = Color.Lerp(Color.red, Color.green, weights[k] * 0.5f + 0.5f);
 
                     var a = pos + layerOfs + neuronOfs;
                     var b = pos + layerOfs - layerStep + neuronStep * k;
