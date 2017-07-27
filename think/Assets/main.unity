@@ -285,18 +285,24 @@ Prefab:
         type: 2}
       propertyPath: pfbTarget
       value: 
-      objectReference: {fileID: 1305348338668718, guid: 94f569136678fd54086a9da1d5384c5e,
+      objectReference: {fileID: 1940599272958352, guid: 89c40ac3ca1eb9a4a9cb39f4082f8562,
         type: 2}
     - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
         type: 2}
       propertyPath: trainingCount
-      value: 16
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
         type: 2}
       propertyPath: trainingTimeLimit
-      value: 30
+      value: 60
       objectReference: {fileID: 0}
+    - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
+        type: 2}
+      propertyPath: pfb
+      value: 
+      objectReference: {fileID: 1825936882579986, guid: 029d01c21dac29a40bffd8e34bd233de,
+        type: 2}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 03fdbe13a7e3d6a4584b346f03185d28, type: 2}
   m_IsPrefabParent: 0
