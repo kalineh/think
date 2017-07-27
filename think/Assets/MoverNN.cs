@@ -50,8 +50,8 @@ public class MoverNN
         body = GetComponent<Rigidbody>();
 
         var layerCount = 3;
-        var neuronCount = 4;
-        var inputCount = 3;
+        var neuronCount = 6;
+        var inputCount = 4;
         var outputCount = 3;
 
         nn = new NeuralNetwork(layerCount, neuronCount, inputCount, outputCount);
@@ -130,7 +130,7 @@ public class MoverNN
         //lastInputValues = input;
 
         //var input = new float[] { rot.x, rot.y, rot.z, rotVel.x, rotVel.y, rotVel.z, energy, targetOfs.x, targetOfs.y, targetOfs.z };
-        var input = new float[] { targetOfs.x, targetOfs.y, targetOfs.z };
+        var input = new float[] { targetOfs.x, targetOfs.y, targetOfs.z, 100.0f };
         var output = new float[] { 0.0f, 0.0f, 0.0f, };
 
         //for (int i = 0; i < input.Length; ++i)
@@ -138,7 +138,7 @@ public class MoverNN
 
         nn.Forward(input, output);
 
-        Debug.DrawLine(transform.position, transform.position + new Vector3(output[0], output[1], output[2]) * 100.0f, Color.red);
+        Debug.DrawLine(transform.position, transform.position + new Vector3(output[0], output[1], output[2]) * 10.0f, Color.red);
 
         //Debug.DrawLine(transform.position, info.point, Color.red, 3.0f);
         //Debug.LogFormat("energy: {0}, out: {1},{2},{3}", energy, output[0], output[1], output[2]);

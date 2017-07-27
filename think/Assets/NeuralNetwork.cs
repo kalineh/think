@@ -68,6 +68,26 @@ public class NeuralNetwork
         }
     }
 
+    public void MutateWeightsAdverse(NeuralNetwork failure, float mutation)
+    {
+        for (int i = 0; i < graph.Length; ++i)
+        {
+            var layer = graph[i];
+            for (int j = 0; j < layer.neurons.Length; ++j)
+            {
+                var neuron = layer.neurons[j];
+                for (int k = 0; k < neuron.weights.Length; ++k)
+                {
+                    var failureWeight = failure.graph[i].neurons[j].weights[k];
+                    var delta = failureWeight - neuron.weights[k];
+
+                    neuron.weights[k] += -delta * mutation;
+                    neuron.weights[k] = Mathf.Clamp(neuron.weights[k], -1.0f, 1.0f);
+                }
+            }
+        }
+    }
+
     public void MutateWeights(float mutation)
     {
         for (int i = 0; i < graph.Length; ++i)
@@ -87,7 +107,7 @@ public class NeuralNetwork
 
     public float MutateWeight(float current)
     {
-        var type = Random.Range(0, 4);
+        var type = Random.Range(0, 5);
 
         switch (type)
         {
@@ -95,6 +115,7 @@ public class NeuralNetwork
             case 1: return Random.Range(-1.0f, 1.0f);
             case 2: return Mathf.Clamp(current * Random.Range(0.0f, 1.0f), -1.0f, 1.0f);
             case 3: return current * Random.Range(0.0f, 1.0f);
+            case 4: return 0.0f;
         }
 
         return current;
@@ -200,7 +221,7 @@ public class NeuralNetwork
 
                 for (int k = 0; k < weights.Length; ++k)
                 {
-                    var color = Color.Lerp(Color.red, Color.green, weights[k] * 0.5f + 1.0f);
+                    var color = Color.Lerp(Color.red, Color.green, weights[k] * 0.5f + 0.5f);
 
                     var a = pos + layerOfs + neuronOfs;
                     var b = pos + layerOfs - layerStep + neuronStep * k;

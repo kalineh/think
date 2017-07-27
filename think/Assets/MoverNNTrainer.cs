@@ -36,6 +36,7 @@ public class MoverNNTrainer
         var count = trainingCount;
 
         var previousBestScore = 9999.0f;
+        var previousWorstScore = 9999.0f;
 
         instances = new List<MoverNN>();
         for (int i = 0; i < count; ++i)
@@ -111,8 +112,9 @@ public class MoverNNTrainer
                 }
             }
 
-            var mutateSingle = false;
-            var mutateMultiple = true;
+            var mutateSingle = true;
+            var mutateMultiple = false;
+            var mutateAdverse = true;
 
             if (mutateSingle)
             {
@@ -152,12 +154,52 @@ public class MoverNNTrainer
 
                     foreach (var instance in instances)
                     {
-                        var mutation = instance == best ? 0.0f : 0.01f;
+                        var mutation = instance == best ? 0.0f : 0.05f;
 
                         instance.nn.MutateWeights(mutation);
                     }
 
                     Debug.LogFormat("MoverNNTrainer: generation {0} winner '{1}': score {2} (time: {3})", generation, best.name, bestScore, timer);
+                }
+            }
+
+            if (mutateAdverse)
+            {
+                var worst = (MoverNN)null;
+                var worstScore = -9999.0f;
+
+                foreach (var instance in instances)
+                {
+                    var ofs = instance.transform.position - target.transform.position;
+                    var lsq = ofs.sqrMagnitude;
+                    var len = lsq > 0.001f ? ofs.magnitude : 0.0f;
+                    var score = len * 1.0f;
+
+                    //if (instance.transform.position.y < -1.0f)
+                        //score = 999999.0f;
+
+                    if (score > worstScore)
+                    {
+                        worst = instance;
+                        worstScore = len;
+                    }
+                }
+
+                previousWorstScore += 2.0f;
+                if (worstScore > previousWorstScore * 1.25f)
+                {
+                    Debug.LogFormat("MoverNNTrainer: adverse generation {0} score {1} didn't beat score: {2}", generation, worstScore, previousWorstScore);
+                    worst = null;
+                }
+                else
+                    previousWorstScore = worstScore;
+
+                if (worst != null)
+                {
+                    foreach (var instance in instances)
+                        instance.nn.MutateWeightsAdverse(worst.nn, 0.1f);
+
+                    Debug.LogFormat("MoverNNTrainer: adverse generation {0} winner '{1}': score {2} (time: {3})", generation, worst.name, worstScore, timer);
                 }
             }
 
