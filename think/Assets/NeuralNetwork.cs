@@ -28,6 +28,27 @@ public class NeuralNetwork
         return (2.0f * 1.0f / (1.0f + Mathf.Exp(-x))) - 1.0f;
     }
 
+    public static float Relu(float x)
+    {
+        return Mathf.Max(x, 0.0f);
+    }
+
+    public static float ReluLeaky(float x)
+    {
+        return Mathf.Max(x, 0.25f);
+    }
+
+    public static float RandomGaussian(float mean, float stddev)
+    {
+        float u1 = 1.0f - Random.Range(0.0f, 1.0f);
+        float u2 = 1.0f - Random.Range(0.0f, 1.0f);
+
+        float stdnorm = Mathf.Sqrt(-2.0f * Mathf.Log(u1)) * Mathf.Sin(2.0f * Mathf.PI * u2);
+        float result = mean + stddev * stdnorm;
+
+        return result;
+    }
+
     public NeuronLayer[] graph;
 
     public NeuralNetwork(int layerCount, int neuronCount, int inputCount, int outputCount)
@@ -49,7 +70,7 @@ public class NeuralNetwork
                 graph[i].neurons[j] = new Neuron();
                 graph[i].neurons[j].weights = new float[weightCount];
                 for (int k = 0; k < weightCount; ++k)
-                    graph[i].neurons[j].weights[k] = Random.Range(-1.0f, 1.0f);
+                    graph[i].neurons[j].weights[k] = InitializeWeight();
             }
         }
     }
@@ -88,6 +109,12 @@ public class NeuralNetwork
         }
     }
 
+    public float InitializeWeight()
+    {
+        //return RandomGaussian(0.0f, 1.0f);
+        return Random.Range(-1.0f, 1.0f);
+    }
+
     public void MutateWeights(float mutation)
     {
         for (int i = 0; i < graph.Length; ++i)
@@ -107,15 +134,14 @@ public class NeuralNetwork
 
     public float MutateWeight(float current)
     {
-        var type = Random.Range(0, 5);
+        var type = Random.Range(0, 4);
 
         switch (type)
         {
-            case 0: return current * -1.0f;
-            case 1: return Random.Range(-1.0f, 1.0f);
+            case 0: return InitializeWeight();
+            case 1: return current * -1.0f;
             case 2: return Mathf.Clamp(current * Random.Range(0.0f, 1.0f), -1.0f, 1.0f);
             case 3: return current * Random.Range(0.0f, 1.0f);
-            case 4: return 0.0f;
         }
 
         return current;

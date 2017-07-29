@@ -112,9 +112,9 @@ public class MoverNNTrainer
                 }
             }
 
-            var mutateSingle = true;
-            var mutateMultiple = false;
-            var mutateAdverse = true;
+            var mutateSingle = false;
+            var mutateMultiple = true;
+            var mutateAdverse = false;
 
             if (mutateSingle)
             {
