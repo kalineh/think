@@ -252,6 +252,8 @@ public class NeuralNetwork
                     var a = pos + layerOfs + neuronOfs;
                     var b = pos + layerOfs - layerStep + neuronStep * k;
 
+                    UnityEditor.Handles.Label((a + b) * 0.5f, string.Format("{0}", weights[k]));
+
                     Gizmos.color = color;
                     Gizmos.DrawLine(a, b);
                 }

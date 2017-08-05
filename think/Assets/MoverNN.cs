@@ -8,10 +8,14 @@ public class MoverNN
     private Rigidbody body;
     private float energy;
     private float time;
+    private float swim;
 
     private Transform target;
+    private Vector3 startPosition;
     private Vector3 prevPosition;
     private int stationaryFrames;
+
+    public float lastOutputTest;
 
     // input count N
     // neuron count M
@@ -34,6 +38,8 @@ public class MoverNN
     public NeuralNetwork nn;
 
     public bool useTorque;
+    public bool useForce;
+    public bool useSwim;
 
     public bool debugDrawNN;
 
@@ -49,14 +55,18 @@ public class MoverNN
 
         body = GetComponent<Rigidbody>();
 
-        var layerCount = 4;
+        var layerCount = 7;
         var neuronCount = 6;
-        var inputCount = 5;
-        var outputCount = 3;
+        var inputCount = 1;
+        var outputCount = 1;
 
         nn = new NeuralNetwork(layerCount, neuronCount, inputCount, outputCount);
         energy = 0.0f;
         time = 0.0f;
+        swim = 1.0f;
+
+        startPosition = transform.position;
+        prevPosition = transform.position;
     }
 
     public void InitFrom(MoverNN rhs)
@@ -76,6 +86,8 @@ public class MoverNN
         body.angularVelocity = Vector3.zero;
 
         prevPosition = startPos;
+        startPosition = startPos;
+
         stationaryFrames = 0;
         energy = 0.0f;
     }
@@ -130,22 +142,61 @@ public class MoverNN
         //lastInputValues = input;
 
         //var input = new float[] { rot.x, rot.y, rot.z, rotVel.x, rotVel.y, rotVel.z, energy, targetOfs.x, targetOfs.y, targetOfs.z };
-        var input = new float[] { targetOfs.z, targetOfs.y, targetOfs.x, 10000.0f, Random.Range(-1000.0f, 1000.0f) };
-        //var input = new float[] { targetOfs.x, targetOfs.y, targetOfs.z, 100.0f };
-        var output = new float[] { 0.0f, 0.0f, 0.0f, };
+        //var input = new float[] { targetOfs.z, targetOfs.y, targetOfs.x, 10000.0f, Random.Range(-1000.0f, 1000.0f) };
+        //var input = new float[] { targetOfs.x, targetOfs.y, targetOfs.z, swim, };
+        //var output = new float[] { 0.0f, 0.0f, 0.0f, 0.0f };
+        var input = new float[] { Random.Range(1.0f, 20.0f), };
+        var output = new float[] { 0.0f, };
 
         for (int i = 0; i < input.Length; ++i)
             input[i] = NeuralNetwork.Sigmoid11(input[i]);
 
         nn.Forward(input, output);
 
-        Debug.DrawLine(transform.position, transform.position + new Vector3(output[0], output[1], output[2]) * 10.0f, Color.red);
+        lastOutputTest = output[0];
+
+        //Debug.DrawLine(transform.position, transform.position + new Vector3(output[0], output[1], output[2]) * 3.0f, Color.red);
 
         //Debug.DrawLine(transform.position, info.point, Color.red, 3.0f);
         //Debug.LogFormat("energy: {0}, out: {1},{2},{3}", energy, output[0], output[1], output[2]);
 
+        if (useSwim)
+        {
+            // requires learning to suppress output3 by swim value (higher swim => output)
+            // does it need a bias?
+
+            // output: rotate xyz
+            // output: swim trigger
+            var swimRotX = output[0];
+            var swimRotY = output[1];
+            var swimRotZ = output[2];
+            var swimPush = output[3] > 0.5f;
+
+            if (swimPush)
+            {
+                if (swim <= 0.5f)
+                {
+                    Debug.DrawLine(transform.position, transform.position + new Vector3(swimRotX, swimRotY, swimRotZ) * 5.0f, Color.green);
+                    body.AddForce(new Vector3(swimRotX, swimRotY, swimRotZ) * 30.0f, ForceMode.Acceleration);
+                    swim = 2.0f;
+                }
+                else
+                {
+                    // penalty
+                    Debug.DrawLine(transform.position, transform.position + new Vector3(swimRotX, swimRotY, swimRotZ) * 5.0f, Color.black);
+                    swim = 5.0f;
+                }
+            }
+
+            swim -= Time.deltaTime;
+            swim = Mathf.Max(swim, 0.0f);
+
+            return;
+        }
+
         energy += 20.0f * Time.deltaTime;
 
+        /*
         var spinX = Mathf.Min(energy, Mathf.Abs(output[0])) * Mathf.Sign(output[0]);
         var spinY = Mathf.Min(energy, Mathf.Abs(output[1])) * Mathf.Sign(output[1]);
         var spinZ = Mathf.Min(energy, Mathf.Abs(output[2])) * Mathf.Sign(output[2]);
@@ -174,12 +225,18 @@ public class MoverNN
 
         if (useTorque)
             body.AddTorque(torque * 5.0f, ForceMode.Acceleration);
-        else
+        if (useForce)
             body.AddForce(torque * 0.25f, ForceMode.Acceleration);
+            */
     }
 
     public bool IsStopped()
     {
         return stationaryFrames > 120;
+    }
+
+    public bool IsAtStart()
+    {
+        return (startPosition - transform.position).sqrMagnitude < 0.05f * 0.05f;
     }
 }

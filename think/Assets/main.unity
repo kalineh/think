@@ -279,7 +279,7 @@ Prefab:
     - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
         type: 2}
       propertyPath: trainingTimeScaleValue
-      value: 25
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
         type: 2}
@@ -295,13 +295,13 @@ Prefab:
     - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
         type: 2}
       propertyPath: trainingTimeLimit
-      value: 20
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 114335622576893440, guid: 03fdbe13a7e3d6a4584b346f03185d28,
         type: 2}
       propertyPath: pfb
       value: 
-      objectReference: {fileID: 1825936882579986, guid: a50ce508121c30842b9baf68f703fcb3,
+      objectReference: {fileID: 1825936882579986, guid: 43d74e7a27cd0d84cb3f01a7058ceeee,
         type: 2}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 03fdbe13a7e3d6a4584b346f03185d28, type: 2}

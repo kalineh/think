@@ -8,7 +8,7 @@ public class MoverNNTargetRandom
     public void OnEnable()
     {
         transform.localPosition =
-            Vector3.Scale(Random.onUnitSphere, new Vector3(1.0f, 0.0f, 1.0f)).normalized * Random.Range(10.0f, 15.0f);
+            Vector3.Scale(Random.onUnitSphere, new Vector3(1.0f, 0.0f, 1.0f)).normalized * 15.0f;
         transform.localPosition += Vector3.up * 1.0f;
     }
 }

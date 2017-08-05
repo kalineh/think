@@ -112,9 +112,53 @@ public class MoverNNTrainer
                 }
             }
 
+            var scoreTestingFixed = true;
             var mutateSingle = false;
-            var mutateMultiple = true;
+            var mutateMultiple = false;
             var mutateAdverse = false;
+
+            if (scoreTestingFixed)
+            {
+                var best = (MoverNN)null;
+                var bestScore = 9999.0f;
+
+                foreach (var instance in instances)
+                {
+                    var result = instance.lastOutputTest * 50.0f;
+                    var delta = Mathf.Abs(-5.0f - result);
+                    if (delta < bestScore)
+                    {
+                        best = instance;
+                        bestScore = delta;
+                    }
+                }
+
+                if (best == null)
+                    previousBestScore += 1.0f;
+
+                if (bestScore > previousBestScore * 1.25f)
+                {
+                    Debug.LogFormat("MoverNNTrainer: generation {0} score {1} didn't beat score: {2}", generation, bestScore, previousBestScore);
+                    best = null;
+                }
+                else
+                    previousBestScore = bestScore;
+
+                if (best != null)
+                {
+                    Debug.LogFormat("MoverNNTrainer: generation {0} winner '{1}': score {2} (time: {3}, output: {4})", generation, best ? best.name : "no best", bestScore, timer, best.lastOutputTest * 50.0f);
+
+                    foreach (var instance in instances)
+                        instance.nn.CopyWeights(best.nn);
+                }
+
+                foreach (var instance in instances)
+                {
+                    var mutation = instance == best ? 0.0f : 0.05f;
+
+                    instance.nn.MutateWeights(mutation);
+                }
+            }
 
             if (mutateSingle)
             {
@@ -123,6 +167,10 @@ public class MoverNNTrainer
 
                 foreach (var instance in instances)
                 {
+                    // invalid if didnt move
+                    if (instance.IsAtStart())
+                        continue;
+
                     var ofs = instance.transform.position - target.transform.position;
                     var lsq = ofs.sqrMagnitude;
                     var len = lsq > 0.001f ? ofs.magnitude : 0.0f;
@@ -138,7 +186,9 @@ public class MoverNNTrainer
                     }
                 }
 
-                previousBestScore += 2.0f;
+                if (best == null)
+                    previousBestScore += 2.0f;
+
                 if (bestScore > previousBestScore * 1.25f)
                 {
                     Debug.LogFormat("MoverNNTrainer: generation {0} score {1} didn't beat score: {2}", generation, bestScore, previousBestScore);
@@ -151,16 +201,16 @@ public class MoverNNTrainer
                 {
                     foreach (var instance in instances)
                         instance.nn.CopyWeights(best.nn);
-
-                    foreach (var instance in instances)
-                    {
-                        var mutation = instance == best ? 0.0f : 0.05f;
-
-                        instance.nn.MutateWeights(mutation);
-                    }
-
-                    Debug.LogFormat("MoverNNTrainer: generation {0} winner '{1}': score {2} (time: {3})", generation, best.name, bestScore, timer);
                 }
+
+                foreach (var instance in instances)
+                {
+                    var mutation = instance == best ? 0.0f : 0.25f;
+
+                    instance.nn.MutateWeights(mutation);
+                }
+
+                Debug.LogFormat("MoverNNTrainer: generation {0} winner '{1}': score {2} (time: {3})", generation, best ? best.name : "no best", bestScore, timer);
             }
 
             if (mutateAdverse)
