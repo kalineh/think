@@ -5,15 +5,15 @@ using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 
-[CustomEditor(typeof(GANNTest))]
-public class GANNTestEditor
+[CustomEditor(typeof(GANNBehaviour))]
+public class GANNBehaviourEditor
     : Editor
 {
     public override void OnInspectorGUI()
     {
         base.OnInspectorGUI();
 
-        var self = target as GANNTest;
+        var self = target as GANNBehaviour;
 
         if (GUILayout.Button("Rebuild"))
             self.Rebuild();
@@ -23,10 +23,18 @@ public class GANNTestEditor
 }
 #endif
 
-public class GANNTest
+public class GANNBehaviour
     : MonoBehaviour
 {
     public GANN gann;
+
+#if UNITY_EDITOR
+    public void OnDrawGizmos()
+    {
+        if (gann != null && Selection.Contains(gameObject))
+            gann.DebugDraw(transform.position);
+    }
+#endif
 
     public void Rebuild()
     {
