@@ -107,6 +107,7 @@ public class GANN
     public class DebugDrawDataNode
     {
         public Vector3 pos;
+        public float sum;
     }
 
     public class DebugDrawDataEdge
@@ -132,7 +133,8 @@ public class GANN
         foreach (var node in nodes)
         {
             if (!debugDrawDataNodes.ContainsKey(node))
-                debugDrawDataNodes.Add(node, new DebugDrawDataNode() { pos = Vector3.zero, });
+                debugDrawDataNodes.Add(node, new DebugDrawDataNode() { pos = Vector3.zero, sum = 0.0f });
+            debugDrawDataNodes[node].sum = node.sum;
         }
 
         foreach (var edge in edges)
@@ -153,29 +155,45 @@ public class GANN
             var pa = kv.Value.a;
             var pb = kv.Value.b;
 
-            pa.pos += Random.onUnitSphere * 0.0001f;
-            pb.pos += Random.onUnitSphere * 0.0001f;
-
             var ofs = pb.pos - pa.pos;
 
-            if (ofs.sqrMagnitude > 0.00001f)
+            if (ofs.sqrMagnitude < 0.00001f)
             {
-                var k = 0.01f;
-                var d = 2.0f;
-                var push = -k * (d - ofs.magnitude);
-
-                var dir = ofs.normalized;
-
-                pa.pos += dir * push;
-                pb.pos -= dir * push;
+                pa.pos += Random.onUnitSphere * 0.0001f;
+                pb.pos += Random.onUnitSphere * 0.0001f;
+                continue;
             }
+
+            var k = 0.01f;
+            var d = 3.0f;
+            var push = -k * (d - ofs.magnitude);
+
+            var dir = ofs.normalized;
+
+            pa.pos += dir * push;
+            pb.pos -= dir * push;
         }
 
         foreach (var kv in debugDrawDataNodes)
         {
             var p = kv.Value.pos;
+            var v = kv.Value.sum;
+
+            var isInput = (kv.Key as InputNode) != null;
+            var isOutput = (kv.Key as OutputNode) != null;
 
             Handles.color = Color.white;
+
+            var color = Color.white;
+
+            if (isInput)
+                color = Color.blue;
+            if (isOutput)
+                color = Color.red;
+
+            var brightness = Sigmoid01(v);
+
+            Handles.color = Color.Lerp(Color.black, color, brightness);
             Handles.SphereHandleCap(0, p, Quaternion.identity, 0.25f, EventType.Repaint);
 
             var po = debugDrawDataNodes[nodes[Random.Range(0, nodes.Count)]];
@@ -190,7 +208,9 @@ public class GANN
             var pa = kv.Value.a.pos;
             var pb = kv.Value.b.pos;
 
-            Handles.color = Color.white;
+            var brightness = Sigmoid01(kv.Value.a.sum);
+
+            Handles.color = Color.Lerp(Color.black, Color.white, brightness);
             Handles.DrawAAPolyLine(2.0f, pa, pb);
         }
 
