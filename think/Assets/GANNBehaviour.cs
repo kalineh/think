@@ -15,10 +15,14 @@ public class GANNBehaviourEditor
 
         var self = target as GANNBehaviour;
 
+        if (GUILayout.Button("Clear"))
+            self.Clear();
         if (GUILayout.Button("Rebuild"))
             self.Rebuild();
         if (GUILayout.Button("Pull"))
             self.Pull();
+
+        EditorUtility.SetDirty(target);
     }
 }
 #endif
@@ -35,6 +39,11 @@ public class GANNBehaviour
             gann.DebugDraw(transform.position);
     }
 #endif
+
+    public void Clear()
+    {
+        gann = null;
+    }
 
     public void Rebuild()
     {

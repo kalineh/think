@@ -8,6 +8,7 @@ using UnityEditor;
 
 [System.Serializable]
 public class GANN
+    : ISerializationCallbackReceiver
 {
     public static float Sigmoid01(float x)
     {
@@ -19,7 +20,6 @@ public class GANN
         return (2.0f * 1.0f / (1.0f + Mathf.Exp(-x))) - 1.0f;
     }
 
-    [System.Serializable]
     public class Edge
     {
 #if UNITY_EDITOR
@@ -43,7 +43,6 @@ public class GANN
         }
     }
 
-    [System.Serializable]
     public class Node
     {
 #if UNITY_EDITOR
@@ -62,7 +61,6 @@ public class GANN
         }
     }
 
-    [System.Serializable]
     public class InputNode
         : Node
     {
@@ -72,7 +70,6 @@ public class GANN
         }
     }
 
-    [System.Serializable]
     public class OutputNode
         : Node
     {
@@ -82,6 +79,158 @@ public class GANN
     public List<OutputNode> outputs;
     public List<Node> nodes;
     public List<Edge> edges;
+
+    [System.Serializable]
+    private class SerializeNode
+    {
+#if UNITY_EDITOR
+        public string label;
+#endif
+        public int type;
+        public float sum;
+        public List<int> edgeIndices;
+    }
+
+    [System.Serializable]
+    private class SerializeEdge
+    {
+#if UNITY_EDITOR
+        public string label;
+#endif
+        public int srcIndex;
+        public int dstIndex;
+        public float a;
+        public float b;
+        public float c;
+    }
+
+    [SerializeField]
+    private List<SerializeNode> serializeNodes;
+
+    [SerializeField]
+    private List<SerializeEdge> serializeEdges;
+
+    public void OnBeforeSerialize()
+    {
+        // not created
+        if (nodes == null)
+            return;
+
+        var nodeIndexLookup = new Dictionary<Node, int>();
+        var edgeIndexLookup = new Dictionary<Edge, int>();
+
+        for (int i = 0; i < nodes.Count; ++i)
+            nodeIndexLookup.Add(nodes[i], i);
+        for (int i = 0; i < edges.Count; ++i)
+            edgeIndexLookup.Add(edges[i], i);
+
+        serializeNodes = new List<SerializeNode>();
+
+        foreach (var node in nodes)
+        {
+            var serializeNode = new SerializeNode();
+
+#if UNITY_EDITOR
+            serializeNode.label = node.label;
+#endif
+
+            serializeNode.type = 0;
+            if ((node as InputNode) != null) serializeNode.type = 1;
+            if ((node as OutputNode) != null) serializeNode.type = 2;
+
+            serializeNode.sum = node.sum;
+
+            serializeNode.edgeIndices = new List<int>();
+            foreach (var edge in node.edges)
+            {
+                var index = edgeIndexLookup[edge];
+                serializeNode.edgeIndices.Add(index);
+            }
+
+            serializeNodes.Add(serializeNode);
+        }
+
+        serializeEdges = new List<SerializeEdge>();
+
+        foreach (var edge in edges)
+        {
+            var serializeEdge = new SerializeEdge();
+
+#if UNITY_EDITOR
+            serializeEdge.label = edge.label;
+#endif
+            serializeEdge.srcIndex = nodeIndexLookup[edge.src];
+            serializeEdge.dstIndex = nodeIndexLookup[edge.dst];
+            serializeEdge.a = edge.a;
+            serializeEdge.b = edge.b;
+            serializeEdge.c = edge.c;
+
+            serializeEdges.Add(serializeEdge);
+        }
+    }
+
+    public void OnAfterDeserialize()
+    {
+        // not created
+        if (serializeNodes == null)
+            return;
+
+        nodes = new List<Node>();
+
+        foreach (var serializeNode in serializeNodes)
+        {
+            var node = (Node)null;
+
+            if (serializeNode.type == 0) node = new Node();
+            if (serializeNode.type == 1) node = new InputNode();
+            if (serializeNode.type == 2) node = new OutputNode();
+
+#if UNITY_EDITOR
+            node.label = serializeNode.label;
+#endif
+
+            node.sum = serializeNode.sum;
+
+            // write edge references after edge list created
+
+            nodes.Add(node);
+        }
+
+        edges = new List<Edge>();
+
+        foreach (var serializeEdge in serializeEdges)
+        {
+            var edge = new Edge();
+
+#if UNITY_EDITOR
+            edge.label = serializeEdge.label;
+#endif
+
+            edge.src = nodes[serializeEdge.srcIndex];
+            edge.dst = nodes[serializeEdge.dstIndex];
+            edge.a = serializeEdge.a;
+            edge.b = serializeEdge.b;
+            edge.c = serializeEdge.c;
+
+            edges.Add(edge);
+        }
+
+        for (int i = 0; i < serializeNodes.Count; ++i)
+        {
+            var serializeNode = serializeNodes[i];
+            var node = nodes[i];
+
+            node.edges = new List<Edge>();
+
+            foreach (var edgeIndex in serializeNode.edgeIndices)
+            {
+                var edge = edges[edgeIndex];
+
+                node.edges.Add(edge);
+            }
+        }
+    }
+
 
     public float Pull(int outputIndex)
     {
@@ -93,14 +242,6 @@ public class GANN
 
         return result;
     }
-
-    //public float InsertNode()
-    //{
-    //}
-
-    //public float RemoveNode()
-    //{
-    //}
 
 #if UNITY_EDITOR
 
@@ -125,6 +266,9 @@ public class GANN
 
     public void DebugDraw(Vector3 at)
     {
+        if (nodes == null)
+            return;
+
         if (debugDrawDataNodes == null)
             debugDrawDataNodes = new Dictionary<Node, DebugDrawDataNode>();
         if (debugDrawDataEdges == null)
@@ -234,6 +378,9 @@ public class GANN
 #if UNITY_EDITOR
             input.label = string.Format("in:{0}", i);
 #endif
+
+            input.edges = new List<Edge>();
+
             network.inputs.Add(input);
             network.nodes.Add(input);
         }
@@ -246,6 +393,8 @@ public class GANN
 #if UNITY_EDITOR
             output.label = string.Format("out:{0}", i);
 #endif
+
+            output.edges = new List<Edge>();
 
             network.outputs.Add(output);
             network.nodes.Add(output);
