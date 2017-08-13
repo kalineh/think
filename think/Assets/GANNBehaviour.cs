@@ -9,16 +9,22 @@ using UnityEditor;
 public class GANNBehaviourEditor
     : Editor
 {
+    private int inputs = 1;
+    private int outputs = 1;
+    private int nodes = 1;
+
     public override void OnInspectorGUI()
     {
-        base.OnInspectorGUI();
-
         var self = target as GANNBehaviour;
+
+        inputs = EditorGUILayout.IntSlider("Inputs", inputs, 1, 8);
+        outputs = EditorGUILayout.IntSlider("Outputs", outputs, 1, 8);
+        nodes = EditorGUILayout.IntSlider("Nodes", nodes, 0, 8);
 
         if (GUILayout.Button("Clear"))
             self.Clear();
         if (GUILayout.Button("Rebuild"))
-            self.Rebuild();
+            self.Rebuild(inputs, outputs, nodes);
         if (GUILayout.Button("Pull"))
             self.Pull();
         if (GUILayout.Button("Insert Node"))
@@ -27,6 +33,8 @@ public class GANNBehaviourEditor
             self.RemoveNode();
 
         EditorUtility.SetDirty(target);
+
+        base.OnInspectorGUI();
     }
 }
 #endif
@@ -49,9 +57,9 @@ public class GANNBehaviour
         gann = null;
     }
 
-    public void Rebuild()
+    public void Rebuild(int inputs, int outputs, int nodes)
     {
-        gann = GANN.BuildTestNetwork();
+        gann = GANN.BuildTestNetwork(inputs, outputs, nodes);
     }
 
     public void Pull()
@@ -72,5 +80,6 @@ public class GANNBehaviour
 
     public void RemoveNode()
     {
+        GANN.RemoveNode(gann);
     }
 }

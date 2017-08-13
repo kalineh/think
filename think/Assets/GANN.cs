@@ -310,8 +310,8 @@ public class GANN
 
             if (ofs.sqrMagnitude < 0.00001f)
             {
-                pa.pos += Random.onUnitSphere * 0.0001f;
-                pb.pos += Random.onUnitSphere * 0.0001f;
+                pa.pos += Random.onUnitSphere * 0.001f;
+                pb.pos += Random.onUnitSphere * 0.001f;
                 continue;
             }
 
@@ -349,18 +349,6 @@ public class GANN
 
             Handles.color = Color.white;
             Handles.Label(p, kv.Key.label);
-
-            var physicsMoveNode = nodes[Random.Range(0, nodes.Count)];
-            var physicsMoveNodeData = debugDrawDataNodes[physicsMoveNode];
-            var physicsMoveNodeOfs = p - physicsMoveNodeData.pos;
-            if (physicsMoveNodeOfs.sqrMagnitude > 0.0001f)
-            {
-                kv.Value.pos += physicsMoveNodeOfs / physicsMoveNodeOfs.sqrMagnitude * 0.001f;
-                if ((kv.Key as InputNode) != null && (physicsMoveNode as InputNode) != null)
-                    kv.Value.pos += physicsMoveNodeOfs / physicsMoveNodeOfs.sqrMagnitude * -0.0005f;
-                if ((kv.Key as OutputNode) != null && (physicsMoveNode as OutputNode) != null)
-                    kv.Value.pos += physicsMoveNodeOfs / physicsMoveNodeOfs.sqrMagnitude * -0.0005f;
-            }
         }
 
         foreach (var kv in debugDrawDataEdges)
@@ -372,9 +360,40 @@ public class GANN
 
             Handles.color = Color.Lerp(Color.black, Color.white, brightness);
             Handles.DrawAAPolyLine(2.0f, pa, pb);
+            Handles.ArrowHandleCap(0, (pa + pb) * 0.5f, Quaternion.LookRotation(pb - pa), 0.5f, EventType.Repaint);
 
-            Handles.color = Color.white;
-            Handles.Label((pa + pb) * 0.5f, kv.Key.label);
+            //Handles.color = Color.white;
+            //Handles.Label((pa + pb) * 0.5f, kv.Key.label);
+        }
+
+        foreach (var edge in edges)
+        {
+            var data = debugDrawDataEdges[edge];
+            var a = data.a.pos;
+            var b = data.b.pos;
+
+            var ofs = b - a;
+            var dir = ofs;
+            var len = ofs.sqrMagnitude;
+            if (len > 0.00001f)
+            {
+                dir /= len;
+                len /= Mathf.Sqrt(len);
+            }
+
+            var k = 0.1f;
+            var d = 3.0f;
+
+            if ((edge.src as InputNode) != null) d += 1.0f;
+            if ((edge.src as OutputNode) != null) d += 1.0f;
+
+            var sep = len - d;
+
+            data.a.pos += ofs * +k * sep;
+            data.b.pos += ofs * -k * sep;
+
+            data.a.pos *= 0.999f;
+            data.b.pos *= 0.999f;
         }
 
         return;
@@ -382,7 +401,7 @@ public class GANN
     }
 #endif
 
-    public static GANN BuildTestNetwork()
+    public static GANN BuildTestNetwork(int inputs, int outputs, int nodes)
     {
         var network = new GANN();
 
@@ -390,7 +409,7 @@ public class GANN
         network.edges = new List<Edge>();
 
         network.inputs = new List<InputNode>();
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < inputs; ++i)
         {
             var input = new InputNode();
 
@@ -405,7 +424,7 @@ public class GANN
         }
 
         network.outputs = new List<OutputNode>();
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < outputs; ++i)
         {
             var output = new OutputNode();
 
@@ -441,7 +460,7 @@ public class GANN
             }
         }
 
-        for (int i = 0; i < 2; ++i)
+        for (int i = 0; i < nodes; ++i)
         {
             var edge = network.edges[Random.Range(0, network.edges.Count)];
 
@@ -489,7 +508,7 @@ public class GANN
         var newEdge = new Edge();
 
 #if UNITY_EDITOR
-        newNode.label = string.Format("inserted");
+        newNode.label = string.Format("inserted{0}", gann.edges.Count);
 #endif
 
         newEdge.src = edge.src;
@@ -515,6 +534,54 @@ public class GANN
 
         gann.edges.Add(newEdge);
         gann.nodes.Add(newNode);
+
+        gann.DebugDrawInvalidate();
+    }
+
+    public static void RemoveNode(GANN gann)
+    {
+        // A <-B <-C
+        // A <-C
+
+        var offset = Random.Range(0, gann.edges.Count);
+        var edge = (Edge)null;
+
+        for (int i = 0; i < gann.edges.Count; ++i)
+        {
+            var e = gann.edges[(i + offset) % gann.edges.Count];
+
+            if ((e.dst as InputNode) != null)
+                continue;
+            if ((e.dst as OutputNode) != null)
+                continue;
+
+            edge = e;
+            break;
+        }
+
+        if (edge == null)
+            return;
+
+        foreach (var e in gann.edges)
+        {
+            if (e == edge)
+                continue;
+
+            if (e.src == edge.dst)
+            {
+                e.src = edge.src;
+                e.label = string.Format("{0}-{1}", e.src.label, e.dst.label);
+            }
+
+            if (e.dst == edge.dst)
+            {
+                e.dst = edge.dst.edges[0].dst;
+                e.label = string.Format("{0}-{1}", e.src.label, e.dst.label);
+            }
+        }
+
+        gann.edges.Remove(edge);
+        gann.nodes.Remove(edge.dst);
 
         gann.DebugDrawInvalidate();
     }
