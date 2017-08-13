@@ -21,6 +21,10 @@ public class GANNBehaviourEditor
             self.Rebuild();
         if (GUILayout.Button("Pull"))
             self.Pull();
+        if (GUILayout.Button("Insert Node"))
+            self.InsertNode();
+        if (GUILayout.Button("Remove Node"))
+            self.RemoveNode();
 
         EditorUtility.SetDirty(target);
     }
@@ -59,5 +63,14 @@ public class GANNBehaviour
 
             Debug.LogFormat("out: {0}: {1} (raw: {2})", i, sig, raw);
         }
+    }
+
+    public void InsertNode()
+    {
+        GANN.InsertNode(gann);
+    }
+
+    public void RemoveNode()
+    {
     }
 }

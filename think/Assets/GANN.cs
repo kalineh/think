@@ -6,6 +6,11 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
+// TODO:
+// node insert
+// node remove
+// edge mutate
+
 [System.Serializable]
 public class GANN
     : ISerializationCallbackReceiver
@@ -260,9 +265,11 @@ public class GANN
     public Dictionary<Node, DebugDrawDataNode> debugDrawDataNodes;
     public Dictionary<Edge, DebugDrawDataEdge> debugDrawDataEdges;
 
-    // we can build a set of nodes
-    // and a set of edges
-    // and spring connect the edges
+    public void DebugDrawInvalidate()
+    {
+        debugDrawDataNodes = null;
+        debugDrawDataEdges = null;
+    }
 
     public void DebugDraw(Vector3 at)
     {
@@ -340,11 +347,20 @@ public class GANN
             Handles.color = Color.Lerp(Color.black, color, brightness);
             Handles.SphereHandleCap(0, p, Quaternion.identity, 0.25f, EventType.Repaint);
 
-            var po = debugDrawDataNodes[nodes[Random.Range(0, nodes.Count)]];
-            var poofs = p - po.pos;
+            Handles.color = Color.white;
+            Handles.Label(p, kv.Key.label);
 
-            if (poofs.sqrMagnitude > 0.0001f)
-                kv.Value.pos += poofs / poofs.sqrMagnitude * 0.001f;
+            var physicsMoveNode = nodes[Random.Range(0, nodes.Count)];
+            var physicsMoveNodeData = debugDrawDataNodes[physicsMoveNode];
+            var physicsMoveNodeOfs = p - physicsMoveNodeData.pos;
+            if (physicsMoveNodeOfs.sqrMagnitude > 0.0001f)
+            {
+                kv.Value.pos += physicsMoveNodeOfs / physicsMoveNodeOfs.sqrMagnitude * 0.001f;
+                if ((kv.Key as InputNode) != null && (physicsMoveNode as InputNode) != null)
+                    kv.Value.pos += physicsMoveNodeOfs / physicsMoveNodeOfs.sqrMagnitude * -0.0005f;
+                if ((kv.Key as OutputNode) != null && (physicsMoveNode as OutputNode) != null)
+                    kv.Value.pos += physicsMoveNodeOfs / physicsMoveNodeOfs.sqrMagnitude * -0.0005f;
+            }
         }
 
         foreach (var kv in debugDrawDataEdges)
@@ -356,6 +372,9 @@ public class GANN
 
             Handles.color = Color.Lerp(Color.black, Color.white, brightness);
             Handles.DrawAAPolyLine(2.0f, pa, pb);
+
+            Handles.color = Color.white;
+            Handles.Label((pa + pb) * 0.5f, kv.Key.label);
         }
 
         return;
@@ -371,7 +390,7 @@ public class GANN
         network.edges = new List<Edge>();
 
         network.inputs = new List<InputNode>();
-        for (int i = 0; i < 8; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             var input = new InputNode();
 
@@ -379,22 +398,20 @@ public class GANN
             input.label = string.Format("in:{0}", i);
 #endif
 
-            input.edges = new List<Edge>();
+            input.edges = new List<Edge>();            
 
             network.inputs.Add(input);
             network.nodes.Add(input);
         }
 
         network.outputs = new List<OutputNode>();
-        for (int i = 0; i < 8; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             var output = new OutputNode();
 
 #if UNITY_EDITOR
             output.label = string.Format("out:{0}", i);
 #endif
-
-            output.edges = new List<Edge>();
 
             network.outputs.Add(output);
             network.nodes.Add(output);
@@ -409,7 +426,7 @@ public class GANN
                 var edge = new Edge();
 
 #if UNITY_EDITOR
-                edge.label = string.Format("edge:{0}-{1}", input.label, output.label);
+                edge.label = string.Format("{0}-{1}", input.label, output.label);
 #endif
 
                 edge.src = input;
@@ -424,7 +441,7 @@ public class GANN
             }
         }
 
-        for (int i = 0; i < 10; ++i)
+        for (int i = 0; i < 2; ++i)
         {
             var edge = network.edges[Random.Range(0, network.edges.Count)];
 
@@ -442,7 +459,7 @@ public class GANN
             newEdge.c = Random.Range(-1.0f, 1.0f);
 
 #if UNITY_EDITOR
-            newEdge.label = string.Format("edge:{0}-{1}", edge.src.label, newNode.label);
+            newEdge.label = string.Format("{0}-{1}", edge.src.label, newNode.label);
 #endif
 
             newNode.edges = new List<Edge>();
@@ -451,7 +468,7 @@ public class GANN
             edge.src = newNode;
 
 #if UNITY_EDITOR
-            edge.label = string.Format("edge:{0}-{1}", edge.src.label, edge.dst.label);
+            edge.label = string.Format("{0}-{1}", edge.src.label, edge.dst.label);
 #endif
 
             network.edges.Add(newEdge);
@@ -459,6 +476,47 @@ public class GANN
         }
         
         return network;
+    }
+
+    public static void InsertNode(GANN gann)
+    {
+        var edge = gann.edges[Random.Range(0, gann.edges.Count)];
+
+        // A <-B <-C
+        // A <-N <-B <-C
+
+        var newNode = new Node();
+        var newEdge = new Edge();
+
+#if UNITY_EDITOR
+        newNode.label = string.Format("inserted");
+#endif
+
+        newEdge.src = edge.src;
+        newEdge.dst = newNode;
+        newEdge.a = Random.Range(0.0f, 1.0f);
+        newEdge.b = Random.Range(-1.0f, 1.0f);
+        newEdge.c = Random.Range(-1.0f, 1.0f);
+
+#if UNITY_EDITOR
+        newEdge.label = string.Format("{0}-{1}", edge.src.label, newNode.label);
+#endif
+
+        newNode.edges = new List<Edge>();
+        newNode.edges.Add(newEdge);
+
+        edge.dst.edges.Remove(edge);
+
+        edge.src = newNode;
+
+#if UNITY_EDITOR
+        edge.label = string.Format("{0}-{1}", edge.src.label, edge.dst.label);
+#endif
+
+        gann.edges.Add(newEdge);
+        gann.nodes.Add(newNode);
+
+        gann.DebugDrawInvalidate();
     }
 }
 
