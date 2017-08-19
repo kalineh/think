@@ -6,11 +6,6 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-// TODO:
-// node insert
-// node remove
-// edge mutate
-
 [System.Serializable]
 public class GANN
     : ISerializationCallbackReceiver
@@ -401,7 +396,7 @@ public class GANN
     }
 #endif
 
-    public static GANN BuildTestNetwork(int inputs, int outputs, int nodes)
+    public static GANN BuildNetwork(int inputs, int outputs, int nodes)
     {
         var network = new GANN();
 
@@ -432,14 +427,15 @@ public class GANN
             output.label = string.Format("out:{0}", i);
 #endif
 
+            output.edges = new List<Edge>();
+
             network.outputs.Add(output);
             network.nodes.Add(output);
         }
 
+
         foreach (var output in network.outputs)
         {
-            output.edges = new List<Edge>();
-
             foreach (var input in network.inputs)
             {
                 var edge = new Edge();
@@ -461,38 +457,7 @@ public class GANN
         }
 
         for (int i = 0; i < nodes; ++i)
-        {
-            var edge = network.edges[Random.Range(0, network.edges.Count)];
-
-            var newNode = new Node();
-            var newEdge = new Edge();
-
-#if UNITY_EDITOR
-            newNode.label = string.Format("node:{0}", i);
-#endif
-
-            newEdge.src = edge.src;
-            newEdge.dst = newNode;
-            newEdge.a = Random.Range(0.0f, 1.0f);
-            newEdge.b = Random.Range(-1.0f, 1.0f);
-            newEdge.c = Random.Range(-1.0f, 1.0f);
-
-#if UNITY_EDITOR
-            newEdge.label = string.Format("{0}-{1}", edge.src.label, newNode.label);
-#endif
-
-            newNode.edges = new List<Edge>();
-            newNode.edges.Add(newEdge);
-
-            edge.src = newNode;
-
-#if UNITY_EDITOR
-            edge.label = string.Format("{0}-{1}", edge.src.label, edge.dst.label);
-#endif
-
-            network.edges.Add(newEdge);
-            network.nodes.Add(newNode);
-        }
+            InsertNode(network);
         
         return network;
     }
@@ -570,13 +535,17 @@ public class GANN
             if (e.src == edge.dst)
             {
                 e.src = edge.src;
+#if UNITY_EDITOR
                 e.label = string.Format("{0}-{1}", e.src.label, e.dst.label);
+#endif
             }
 
             if (e.dst == edge.dst)
             {
                 e.dst = edge.dst.edges[0].dst;
+#if UNITY_EDITOR
                 e.label = string.Format("{0}-{1}", e.src.label, e.dst.label);
+#endif
             }
         }
 

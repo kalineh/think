@@ -59,7 +59,7 @@ public class GANNBehaviour
 
     public void Rebuild(int inputs, int outputs, int nodes)
     {
-        gann = GANN.BuildTestNetwork(inputs, outputs, nodes);
+        gann = GANN.BuildNetwork(inputs, outputs, nodes);
     }
 
     public void Pull()
