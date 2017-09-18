@@ -396,6 +396,21 @@ public class GANN
     }
 #endif
 
+    public static GANN DuplicateNetwork(GANN source)
+    {
+        var memory = new System.IO.MemoryStream();
+        var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+
+        source.OnBeforeSerialize();
+        formatter.Serialize(memory, source);
+
+        var network = (GANN)formatter.Deserialize(memory);
+        network.OnAfterDeserialize();
+
+        memory.Close();
+        return network;
+    }
+
     public static GANN BuildNetwork(int inputs, int outputs, int nodes)
     {
         var network = new GANN();
@@ -553,6 +568,26 @@ public class GANN
         gann.nodes.Remove(edge.dst);
 
         gann.DebugDrawInvalidate();
+    }
+
+    public void SafeSetInputs(float[] in_)
+    {
+        for (int i = 0; i < inputs.Count; ++i)
+            inputs[i].sum = 0.0f;
+
+        for (int i = 0; i < in_.Length; ++i)
+            if (i < inputs.Count)
+                inputs[i].sum = in_[i];
+    }
+
+    public void SafeGetOutputs(float[] out_)
+    {
+        for (int i = 0; i < inputs.Count; ++i)
+            out_[i] = 0.0f;
+
+        for (int i = 0; i < out_.Length; ++i)
+            if (i < outputs.Count)
+                out_[i] = outputs[i].sum;
     }
 }
 

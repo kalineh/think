@@ -52,6 +52,15 @@ public class GANNBehaviour
     }
 #endif
 
+    public virtual bool IsActive()
+    {
+        return true;
+    }
+
+    public virtual void Tick()
+    {
+    }
+
     public void Clear()
     {
         gann = null;
@@ -60,6 +69,17 @@ public class GANNBehaviour
     public void Rebuild(int inputs, int outputs, int nodes)
     {
         gann = GANN.BuildNetwork(inputs, outputs, nodes);
+    }
+
+    public void Duplicate(GANNBehaviour src)
+    {
+        gann = GANN.DuplicateNetwork(src.gann);
+    }
+
+    public void Mutate()
+    {
+        GANN.InsertNode(gann);
+        GANN.RemoveNode(gann);
     }
 
     public void Pull()

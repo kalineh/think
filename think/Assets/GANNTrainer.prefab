@@ -51,7 +51,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64f16b30ce197d14a9f959e22f206f5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prefab: {fileID: 1704505801740358, guid: 28409b5e1a03a7a4d85aeb534d10d867, type: 2}
+  prefab: {fileID: 1704505801740358, guid: b64aed16382aae04da0544b09d5b8409, type: 2}
   parallelCount: 16
   trainingPause: 0
   trainingStep: 0

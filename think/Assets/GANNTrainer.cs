@@ -58,8 +58,23 @@ public class GANNTrainer
                 var obj = GameObject.Instantiate(prefab);
                 var gann = obj.GetComponent<GANNBehaviour>(); 
 
+                // want to build from the previous winning trainer
+                var best = (GANNBehaviour)null;
+
+                if (best != null)
+                {
+                    gann.Duplicate(best);
+                    gann.Mutate();
+                }
+                else
+                {
+                    gann.Rebuild(3, 3, 3);
+                }
+
                 obj.transform.SetParent(run.holder.transform);
                 obj.name = string.Format("GANN{0}", i);
+
+                run.objects.Add(obj);
             }
 
             var remaining = trainingRunTime;
@@ -98,27 +113,24 @@ public class GANNTrainer
         }
     }
 
-
     public float Tick(TrainingRun run, float timer, float dt, out bool earlyOut)
     {
         timer += dt;
 
         earlyOut = false;
 
-        return timer;
-
-        var moving = false;
+        var active = false;
         foreach (var obj in run.objects)
         {
             var gann = obj.GetComponent<GANNBehaviour>();
-            //if (gann.IsStopped() == false)
-            //{
-                //moving = true;
-                //break;
-            //}
+
+            gann.Tick();
+
+            if (gann.IsActive())
+                active = true;
         }
 
-        if (!moving)
+        if (!active)
             earlyOut = true;
 
         return timer;
